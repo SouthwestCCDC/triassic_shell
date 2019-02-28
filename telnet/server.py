@@ -77,6 +77,7 @@ class _ConnectionStdout(object):
             self._connection.send(b''.join(self._buffer))
         except socket.error as e:
             logger.warning("Couldn't send data over socket: %s" % e)
+            raise e
 
         self._buffer = []
 

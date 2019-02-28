@@ -1,6 +1,7 @@
 import sys
 import asyncio
 import logging
+import socket
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.eventloop.defaults import use_asyncio_event_loop
@@ -36,6 +37,8 @@ async def launch_session(connection):
         await BasePrompt(session, zodb_root=root, connection=connection).loop_until_exit()
     except KeyboardInterrupt:
         pass
+    except socket.error as e:
+        print('Socket error. Shutting down session.')
 
 def main_telnet():
     from telnet.server import TelnetServer
