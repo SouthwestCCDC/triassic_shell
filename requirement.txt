@@ -1,0 +1,11 @@
+BTrees==4.5.1
+persistent==4.4.3
+prompt-toolkit==2.0.9
+six==1.12.0
+transaction==2.4.0
+wcwidth==0.1.7
+zc.lockfile==1.4
+ZConfig==3.4.0
+ZODB==5.5.1
+zodbpickle==1.0.3
+zope.interface==4.6.0
