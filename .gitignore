@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.vscode/tasks.json
+.vscode/settings.json
+.vscode/launch.json
+triassic_shell.code-workspace
