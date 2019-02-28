@@ -1,6 +1,9 @@
 import asyncio
 
+import ZODB, transaction
+
 from prompt_command import CommandLevel
+import data_model
 
 class BasePrompt(CommandLevel):
     command_desc_dict = {
@@ -9,10 +12,9 @@ class BasePrompt(CommandLevel):
         "show" : "show status of exhibits and security nodes"
     }
 
-    def __init__(self, session, enabled=False, zodb_root=None, **kwargs):
+    def __init__(self, session, enabled=False, **kwargs):
         super().__init__(session, **kwargs)
         self.enabled = enabled
-        self.zodb_root = zodb_root
         if enabled:
             self.prompt_text = '#> '
 
@@ -30,7 +32,7 @@ class BasePrompt(CommandLevel):
         if not self.enabled:
             # TODO: new prompt!
             self.println('No password is configured...')
-            await BasePrompt(self.session, enabled=True, zodb_root=self.zodb_root).loop_until_exit()
+            await BasePrompt(self.session, enabled=True).loop_until_exit()
 
     def _access_parser(self, parser):
         access_subparsers = parser.add_subparsers(required=True, dest='command')
@@ -50,7 +52,7 @@ class BasePrompt(CommandLevel):
         elif args.command == 'main' and args.subcommand == 'security' and args.node =='grid' :
             # ACCESS MAIN SECURITY GRID
             self.println('ok')
-            await GridPrompt(self.session, zodb_root=self.zodb_root).loop_until_exit()
+            await GridPrompt(self.session).loop_until_exit()
         else:
             # poop
             self.println("command not available")
@@ -69,9 +71,11 @@ class BasePrompt(CommandLevel):
     def _do_show(self, args):
         all_exhibits = set()
         fence_sections = {}
-        for id,node in self.zodb_root.fence_segments.items():
+        conn = data_model.get_db_conn()
+        for id,node in conn.root.fence_segments.items():
             all_exhibits.add(node.dinosaur)
             fence_sections[id] = node
+        conn.close()
 
         if args.command == 'all':
             self.println('node\texhibit\t\tstatus')
@@ -111,10 +115,6 @@ class GridPrompt(CommandLevel):
     }
     default_prompt_text = 'main security grid #> '
 
-    def __init__(self, session, zodb_root=None, **kwargs):
-        super().__init__(session, **kwargs)
-        self.zodb_root = zodb_root
-
     def _set_parser(self, parser):
         # set node <id> <up/down>
         # set exhibit <name> <up/down>
@@ -131,10 +131,12 @@ class GridPrompt(CommandLevel):
         return parser
     
     def _do_set(self, args):
+        conn = data_model.get_db_conn()
         if args.scope == 'exhibit':
             self.println('node\texhibit\t\tstatus')
             self.println('====\t=======\t\t======')
-            for id,node in self.zodb_root.fence_segments.items():
+            # DATABASE_SECTION
+            for id,node in conn.root.fence_segments.items():
                 if node.dinosaur != args.name:
                     continue
                 # The node matches the requested exhibit, so make it so:
@@ -142,15 +144,18 @@ class GridPrompt(CommandLevel):
 
                 self.println('%x\t%s\t%s' % (id, node.dinosaur, node.fence_status()))
         elif args.scope == 'node':
-            if args.id not in self.zodb_root.fence_segments:
+            if args.id not in conn.root.fence_segments:
                 self.println('error')
                 # TODO: "dump core"
                 raise EOFError()
-            node = self.zodb_root.fence_segments[args.id]
+            # DATABASE_SECTION
+            node = conn.root.fence_segments[args.id]
             node.enabled = (args.state=='up') # True for up, False for down
             self.println('node\tstatus')
             self.println('====\t======')
             self.println('%x\t%s' % (node.id, node.fence_status()))
+        transaction.commit()
+        conn.close()
             
 
     def _alloc_parser(self, parser):
@@ -171,13 +176,16 @@ class GridPrompt(CommandLevel):
     def _do_alloc(self, args):
         # The only option, currently, is `alloc node <id> <val>`
         #  so we know that's been validated.
-        if args.id not in self.zodb_root.fence_segments:
+        # DATABASE_SECTION
+        conn = data_model.get_db_conn()
+        if args.id not in conn.root.fence_segments:
             self.println('error')
+            conn.close()
             # TODO: "dump core"
             raise EOFError()
 
         # Now we know val, and id, are both ok.
-        node = self.zodb_root.fence_segments[args.id]
+        node = conn.root.fence_segments[args.id]
         # Check range, because if they've overpowered the node,
         #  then its fuse is going to blow, or something.
         new_power = node.state + args.power
@@ -196,3 +204,5 @@ class GridPrompt(CommandLevel):
         self.println('====\t======\t=========')
         self.println('%x\t%s\t%0.3f' % (node.id,
                             node.fence_status(), node.state))
+        transaction.commit()
+        conn.close()

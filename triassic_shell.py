@@ -10,20 +10,14 @@ from prompt_toolkit.patch_stdout import patch_stdout
 import data_model
 from triassic_prompts import BasePrompt
 
-def main_sync():
-    root = data_model.get_data_root()
-
-    session = PromptSession()
-    BasePrompt(session, zodb_root=root).loop_until_exit()
-
 def main():
     # Tell prompt_toolkit to use the asyncio event loop.
     use_asyncio_event_loop()
-    root = data_model.get_data_root()
+    data_model.init_db()
 
     session = PromptSession()
 
-    shell_task = asyncio.ensure_future(BasePrompt(session, zodb_root=root).loop_until_exit())
+    shell_task = asyncio.ensure_future(BasePrompt(session).loop_until_exit())
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(shell_task)
@@ -32,9 +26,8 @@ def main():
 async def launch_session(connection):
     print('Launching new session')
     try:
-        root = data_model.get_data_root()
         session = PromptSession(output=connection.vt100_output, input=connection.vt100_input)
-        await BasePrompt(session, zodb_root=root, connection=connection).loop_until_exit()
+        await BasePrompt(session, connection=connection).loop_until_exit()
     except KeyboardInterrupt:
         pass
     except socket.error as e:

@@ -42,8 +42,20 @@ class FenceSegment(persistent.Persistent):
         else:
             return 'ok'
 
-def init_db(root):
-    root.fence_segments = BTrees.OOBTree.BTree()
+db = None
+
+def get_db_conn():
+    global db
+    if not db:
+        db = ZODB.DB(None)
+    # conn = db.open_then_close_db_when_connection_closes()
+    conn = db.open()
+    return conn
+
+
+def init_db():
+    conn = get_db_conn()
+    conn.root.fence_segments = BTrees.OOBTree.BTree()
     for id in range(0x10000+10111, 0xfffff, 10111): # 97 elements
         if id % 5 == 0:
             dino_name = 'velociraptor'
@@ -51,14 +63,9 @@ def init_db(root):
             dino_name = 'tyrannosaurus'
         else:
             dino_name = 'triceratops'
-        root.fence_segments[id] = FenceSegment(
+        conn.root.fence_segments[id] = FenceSegment(
             id,
             dino_name,
         )
-
-def get_data_root():
-    connection = ZODB.connection(None)
-    root = connection.root
-    # TODO: if not working:
-    init_db(root)
-    return root
+    transaction.commit()
+    conn.close()
