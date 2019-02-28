@@ -7,8 +7,27 @@ class FenceSegment(persistent.Persistent):
         pass
         self.id = id
         self.dinosaur = dinosaur_name
-        self.state = 1.0
-        self.enabled = True
+        # TODO: Changing the following need to set self._p_changed=True:
+        self._state = 1.0
+        self._enabled = True
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+        self._p_changed = True
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value):
+        self._enabled = value
+        self._p_changed = True
 
     def reset_state(self):
         self.state = 1.0
