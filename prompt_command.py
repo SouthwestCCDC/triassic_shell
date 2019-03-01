@@ -1,12 +1,11 @@
 import sys
 import argparse
-import inspect
 
-import asyncio
-
+from prompt_toolkit.eventloop import From
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.eventloop.future import Future
 
 class CommandParseFail(Exception):
     pass
@@ -96,12 +95,7 @@ class CommandLevel():
     def prompt_exit(self):
         pass
 
-    async def telnet_interact(self, connection):
-        self.session.output = connection.vt100_output
-        self.session.input = connection.vt100_input
-        await self.loop_until_exit()
-
-    async def loop_until_exit(self):
+    def loop_until_exit(self):
         completer = WordCompleter(self.command_parsers.keys())
         self.prompt_enter()
         while True:
@@ -109,12 +103,12 @@ class CommandLevel():
                 # # TODO: Probably not needed, ultimately.
                 # with patch_stdout():
                     # Show a prompt, and store the user's input once it's received.
-                shell_input_raw = await self.session.prompt(
+                shell_input_raw = yield From(self.session.prompt(
                     self.prompt_text, 
                     completer=completer, 
                     complete_style=CompleteStyle.READLINE_LIKE,
                     async_=True
-                )
+                ))
                 
                 # Tokenize the input
                 shell_input_params = shell_input_raw.split()
@@ -145,10 +139,13 @@ class CommandLevel():
 
                 # TODO: Does the thing where it will accept a fragment break us here?
                 cmd_method = getattr(self, '_do_%s' % cmd)
-                if inspect.iscoroutinefunction(cmd_method):
-                    await cmd_method(args)
+
+                # TODO TODO TODO horrible hack
+                if cmd in ['access', 'enable']:
+                    yield From(cmd_method(args))
                 else:
                     cmd_method(args)
+                
 
             except EOFError:
                 # An EOFError is raised when it's time to leave this level.

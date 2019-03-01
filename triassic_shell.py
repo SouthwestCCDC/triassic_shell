@@ -1,26 +1,26 @@
 import sys
-import asyncio
 import logging
 import socket
 import argparse
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.eventloop.defaults import use_asyncio_event_loop
+from prompt_toolkit.eventloop import From, get_event_loop
 from prompt_toolkit.patch_stdout import patch_stdout
 
 import data_model
 from triassic_prompts import BasePrompt
 
 def run_local():
+    pass
     session = PromptSession()
-    shell_task = asyncio.ensure_future(BasePrompt(session).loop_until_exit())
-    asyncio.get_event_loop().run_until_complete(shell_task)
+    shell_task = From(BasePrompt(session).loop_until_exit())
+    get_event_loop().run_until_complete(shell_task)
 
-async def launch_telnet_session(connection):
+def launch_telnet_session(connection):
     print('Launching new session')
     try:
         session = PromptSession(output=connection.vt100_output, input=connection.vt100_input)
-        await BasePrompt(session, connection=connection).loop_until_exit()
+        yield From(BasePrompt(session, connection=connection).loop_until_exit())
     except KeyboardInterrupt:
         pass
     except socket.error as e:
@@ -36,7 +36,7 @@ def run_telnet(host, port):
 
     server = TelnetServer(interact=launch_telnet_session, host=host, port=port)
     server.start()
-    asyncio.get_event_loop().run_forever()
+    get_event_loop().run_forever()
 
 def main():
     parser = argparse.ArgumentParser(prog='triassic_shell.py')
@@ -47,10 +47,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Do our setup, but only once the arguments have been validated
-    #  (though, we could still fail to bind to the requested socket)
-    # Tell prompt_toolkit to use the asyncio event loop.
-    use_asyncio_event_loop()
     # Initialize the database, if needed.
     data_model.init_db()
 

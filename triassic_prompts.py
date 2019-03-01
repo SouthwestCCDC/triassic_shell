@@ -1,7 +1,6 @@
-import asyncio
-
 import ZODB, transaction
 
+from prompt_toolkit.eventloop import From
 from prompt_command import CommandLevel
 import data_model
 
@@ -28,11 +27,11 @@ class BasePrompt(CommandLevel):
         # No parameters - just `enable`
         return parser
 
-    async def _do_enable(self, args):
+    def _do_enable(self, args):
         if not self.enabled:
             # TODO: new prompt!
             self.println('No password is configured...')
-            await BasePrompt(self.session, enabled=True).loop_until_exit()
+            yield From(BasePrompt(self.session, enabled=True).loop_until_exit())
 
     def _access_parser(self, parser):
         access_subparsers = parser.add_subparsers(required=True, dest='command')
@@ -45,14 +44,14 @@ class BasePrompt(CommandLevel):
                     subcommand.add_argument('node', action='store', choices=['grid'])
         return parser
 
-    async def _do_access(self, args):
+    def _do_access(self, args):
         if not self.enabled:
             self.println('ACCESS DENIED')
             return
         elif args.command == 'main' and args.subcommand == 'security' and args.node =='grid' :
             # ACCESS MAIN SECURITY GRID
             self.println('ok')
-            await GridPrompt(self.session).loop_until_exit()
+            yield From(GridPrompt(self.session).loop_until_exit())
         else:
             # poop
             self.println("command not available")
