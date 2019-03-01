@@ -43,18 +43,23 @@ class FenceSegment(persistent.Persistent):
             return 'ok'
 
 db = None
+db_path = None
 
 def get_db_conn():
     global db
     if not db:
-        db = ZODB.DB(None)
-    # conn = db.open_then_close_db_when_connection_closes()
+        db = ZODB.DB(db_path)
     conn = db.open()
     return conn
 
-
-def init_db():
+def init_db(filepath):
+    global db_path
+    if filepath:
+        db_path = filepath
     conn = get_db_conn()
+    if conn.root.fence_segments:
+        conn.close()
+        return
     conn.root.fence_segments = BTrees.OOBTree.BTree()
     for id in range(0x10000+10111, 0xfffff, 10111): # 97 elements
         if id % 5 == 0:

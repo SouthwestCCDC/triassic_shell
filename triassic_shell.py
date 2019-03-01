@@ -40,6 +40,7 @@ def run_telnet(host, port):
 
 def main():
     parser = argparse.ArgumentParser(prog='triassic_shell.py')
+    parser.add_argument('-f', '--file')
     telnet_parsers = parser.add_subparsers(dest='command')
     telnet_parser = telnet_parsers.add_parser('telnet')
     telnet_parser.add_argument('-a', '--address', default='127.0.0.1', dest='host')
@@ -48,7 +49,7 @@ def main():
     args = parser.parse_args()
 
     # Initialize the database, if needed.
-    data_model.init_db()
+    data_model.init_db(args.file if args.file else None)
 
     if args.command == 'telnet':
         run_telnet(args.host, args.port)
