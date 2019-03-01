@@ -37,10 +37,10 @@ class BasePrompt(CommandLevel):
     def _access_parser(self, parser):
         access_subparsers = parser.add_subparsers(required=True, dest='command')
         for command in ['main', 'backup']:
-            sp = access_subparsers.add_parser(command, add_help=False)
+            sp = access_subparsers.add_parser(command, add_help=False, print_fn=self.println)
             sp_subparsers = sp.add_subparsers(required=True, dest='subcommand')
             for sc in ['security', 'program']:
-                subcommand = sp_subparsers.add_parser(sc, add_help=False)
+                subcommand = sp_subparsers.add_parser(sc, add_help=False, print_fn=self.println)
                 if sc == 'security':
                     subcommand.add_argument('node', action='store', choices=['grid'])
         return parser
@@ -59,10 +59,10 @@ class BasePrompt(CommandLevel):
 
     def _show_parser(self, parser):
         subparsers = parser.add_subparsers(required=True, dest='command')
-        subparsers.add_parser('all', add_help=False)
-        exhibit_parser = subparsers.add_parser('exhibit', add_help=False)
+        subparsers.add_parser('all', add_help=False, print_fn=self.println)
+        exhibit_parser = subparsers.add_parser('exhibit', add_help=False, print_fn=self.println)
         exhibit_parser.add_argument('name', nargs='?', type=str) # TODO: choices
-        node_parser = subparsers.add_parser('node', add_help=False)
+        node_parser = subparsers.add_parser('node', add_help=False, print_fn=self.println)
         def nodeid(i):
             return int(i, 16)
         node_parser.add_argument('id', type=nodeid)
@@ -119,11 +119,11 @@ class GridPrompt(CommandLevel):
         # set node <id> <up/down>
         # set exhibit <name> <up/down>
         subparsers = parser.add_subparsers(required=True, dest='scope')
-        exhibit_parser = subparsers.add_parser('exhibit', add_help=False)
+        exhibit_parser = subparsers.add_parser('exhibit', add_help=False, print_fn=self.println)
         exhibit_parser.add_argument('name', type=str) # TODO: choices?
         exhibit_parser.add_argument('state', type=str, choices=['up', 'down'])
 
-        node_parser = subparsers.add_parser('node', add_help=False)
+        node_parser = subparsers.add_parser('node', add_help=False, print_fn=self.println)
         def nodeid(i):
             return int(i, 16)
         node_parser.add_argument('id', type=nodeid)
@@ -161,7 +161,7 @@ class GridPrompt(CommandLevel):
     def _alloc_parser(self, parser):
         # alloc node <id> <val>
         subparsers = parser.add_subparsers(required=True, dest='scope')
-        node_parser = subparsers.add_parser('node', add_help=False)
+        node_parser = subparsers.add_parser('node', add_help=False, print_fn=self.println)
         def nodeid(i):
             return int(i, 16)
         def powerlevel(i):
