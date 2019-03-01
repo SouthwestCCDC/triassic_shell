@@ -34,11 +34,11 @@ class FenceSegment(persistent.Persistent):
 
     def fence_status(self):
         if not self.enabled:
-            return 'pwr_off'
-        if self.state < 0.5:
-            return 'degraded'
-        elif self.state < 0.25:
+            return 'pwroff'
+        if self.state < 0.25:
             return 'failed'
+        elif self.state < 0.5:
+            return 'degrad'
         else:
             return 'ok'
 
