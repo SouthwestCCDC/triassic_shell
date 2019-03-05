@@ -2,6 +2,7 @@ import sys
 import logging
 import socket
 import argparse
+import json
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.eventloop import From, get_event_loop

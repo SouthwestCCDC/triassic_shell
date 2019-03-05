@@ -1,32 +1,50 @@
+import json
+
 import persistent
 import ZODB, ZODB.FileStorage, transaction
 import BTrees.OOBTree
 from triassic_consensus.client import DistributedDict
 
+
 class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
-        pass
         self.id = id
         self.dinosaur = dinosaur_name
         # TODO: Changing the following need to set self._p_changed=True:
         self._state = 1.0
         self._enabled = True
+        global dist_dict
+        self.config = config
+        self.dist_dict = dist_dict
 
     @property
     def state(self):
+        if self.dist_dict is not None:
+            self._state = self.dist_dict['%d_state' % self.id]
+
         return self._state
 
     @state.setter
     def state(self, value):
+        if self.dist_dict is not None:
+            self.dist_dict['%d_state'] = value
+
         self._state = value
         self._p_changed = True
 
+
     @property
     def enabled(self):
+        if self.dist_dict is not None:
+            self._enabled = self.dist_dict['%d_enabled']
+
         return self._enabled
 
     @enabled.setter
     def enabled(self, value):
+        if self.dist_dict is not None:
+            self.dist_dict['%d_enabled'] = value
+
         self._enabled = value
         self._p_changed = True
 
@@ -46,27 +64,39 @@ class FenceSegment(persistent.Persistent):
 db = None
 db_path = None
 dist_dict = None
+config = None
+
+with open('./triassic_shell.conf', 'r') as fp:
+    config = json.load(fp)
 
 def get_db_conn():
     global db
-    if not db:
-        db = ZODB.DB(db_path)
-    conn = db.open()
-    return conn
+    global dist_dict
+    if dist_dict is None:
+        if not db:
+            db = ZODB.DB(db_path)
+        conn = db.open()
+        return conn
+    else:
+        return dist_dict
 
-def init_db(filepath, dist_dict_enabled = True):
+def init_db(filepath):
     global db_path
+    global config
+    global dist_dict
+
     if filepath:
         db_path = filepath
+
     conn = get_db_conn()
-    if conn.root.fence_segments:
-        conn.close()
-        return
 
-    if dist_dict_enabled:
+    if config['dist_dict_enabled'] == 'True':
         dist_dict = DistributedDict('129.244.246.192', 5255)
+    else:
+        if conn.root.fence_segments:
+            conn.close()
+            return
 
-    if not dist_dict_enabled:
         conn.root.fence_segments = BTrees.OOBTree.BTree()
         for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
             if id % 5 == 0:
@@ -81,5 +111,3 @@ def init_db(filepath, dist_dict_enabled = True):
             )
         transaction.commit()
         conn.close()
-
-
