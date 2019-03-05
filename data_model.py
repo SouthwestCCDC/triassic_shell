@@ -1,6 +1,7 @@
 import persistent
 import ZODB, ZODB.FileStorage, transaction
 import BTrees.OOBTree
+from triassic_consensus.client import DistributedDict
 
 class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
@@ -44,6 +45,7 @@ class FenceSegment(persistent.Persistent):
 
 db = None
 db_path = None
+dist_dict = None
 
 def get_db_conn():
     global db
@@ -52,7 +54,7 @@ def get_db_conn():
     conn = db.open()
     return conn
 
-def init_db(filepath):
+def init_db(filepath, dist_dict_enabled = True):
     global db_path
     if filepath:
         db_path = filepath
@@ -60,17 +62,24 @@ def init_db(filepath):
     if conn.root.fence_segments:
         conn.close()
         return
-    conn.root.fence_segments = BTrees.OOBTree.BTree()
-    for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
-        if id % 5 == 0:
-            dino_name = 'velociraptor'
-        elif id % 4 == 0:
-            dino_name = 'tyrannosaurus'
-        else:
-            dino_name = 'triceratops'
-        conn.root.fence_segments[id] = FenceSegment(
-            id,
-            dino_name,
-        )
-    transaction.commit()
-    conn.close()
+
+    if dist_dict_enabled:
+        dist_dict = DistributedDict('129.244.246.192', 5255)
+
+    if not dist_dict_enabled:
+        conn.root.fence_segments = BTrees.OOBTree.BTree()
+        for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
+            if id % 5 == 0:
+                dino_name = 'velociraptor'
+            elif id % 4 == 0:
+                dino_name = 'tyrannosaurus'
+            else:
+                dino_name = 'triceratops'
+            conn.root.fence_segments[id] = FenceSegment(
+                id,
+                dino_name,
+            )
+        transaction.commit()
+        conn.close()
+
+
