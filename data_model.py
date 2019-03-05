@@ -61,7 +61,7 @@ def init_db(filepath):
         conn.close()
         return
     conn.root.fence_segments = BTrees.OOBTree.BTree()
-    for id in range(0x10000+10111, 0xfffff, 10111): # 97 elements
+    for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
         if id % 5 == 0:
             dino_name = 'velociraptor'
         elif id % 4 == 0:
