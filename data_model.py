@@ -10,24 +10,30 @@ class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
         self.id = id
         self.dinosaur = dinosaur_name
+
+        global dist_dict
+        self.dist_dict = dist_dict
+
         # TODO: Changing the following need to set self._p_changed=True:
         self._state = 1.0
         self._enabled = True
-        global dist_dict
-        self.config = config
-        self.dist_dict = dist_dict
+
+        if self.dist_dict is not None:
+            self.dist_dict['%d_dino_name' % id] = dinosaur_name
+            self.dist_dict['%d_state' % id] = self._state
+            self.dist_dict['%d_enabled' % id] = self._enabled
 
     @property
     def state(self):
-        if self.dist_dict is not None:
-            self._state = self.dist_dict['%d_state' % self.id]
+        # if self.dist_dict is not None:
+        #     self._state = self.dist_dict['%d_state' % self.id]
 
         return self._state
 
     @state.setter
     def state(self, value):
         if self.dist_dict is not None:
-            self.dist_dict['%d_state'] = value
+            self.dist_dict['%d_state' % self.id] = value
 
         self._state = value
         self._p_changed = True
@@ -35,15 +41,15 @@ class FenceSegment(persistent.Persistent):
 
     @property
     def enabled(self):
-        if self.dist_dict is not None:
-            self._enabled = self.dist_dict['%d_enabled']
+        # if self.dist_dict is not None:
+        #     self._enabled = self.dist_dict['%d_enabled' % self.id]
 
         return self._enabled
 
     @enabled.setter
     def enabled(self, value):
         if self.dist_dict is not None:
-            self.dist_dict['%d_enabled'] = value
+            self.dist_dict['%d_enabled' % self.id] = value
 
         self._enabled = value
         self._p_changed = True
@@ -71,14 +77,11 @@ with open('./triassic_shell.conf', 'r') as fp:
 
 def get_db_conn():
     global db
-    global dist_dict
-    if dist_dict is None:
-        if not db:
-            db = ZODB.DB(db_path)
-        conn = db.open()
-        return conn
-    else:
-        return dist_dict
+
+    if not db:
+        db = ZODB.DB(db_path)
+    conn = db.open()
+    return conn
 
 def init_db(filepath):
     global db_path
@@ -92,22 +95,29 @@ def init_db(filepath):
 
     if config['dist_dict_enabled'] == 'True':
         dist_dict = DistributedDict('129.244.246.192', 5255)
-    else:
+
+    try:
         if conn.root.fence_segments:
             conn.close()
             return
+    except AttributeError:
+        pass
 
-        conn.root.fence_segments = BTrees.OOBTree.BTree()
-        for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
-            if id % 5 == 0:
-                dino_name = 'velociraptor'
-            elif id % 4 == 0:
-                dino_name = 'tyrannosaurus'
-            else:
-                dino_name = 'triceratops'
-            conn.root.fence_segments[id] = FenceSegment(
-                id,
-                dino_name,
-            )
-        transaction.commit()
-        conn.close()
+    conn.root.fence_segments = BTrees.OOBTree.BTree()
+    for id in range(0x10000+10111, 0xfffff, 10111): # 97x2 elements I think
+        if id % 5 == 0:
+            dino_name = 'velociraptor'
+        elif id % 4 == 0:
+            dino_name = 'tyrannosaurus'
+        else:
+            dino_name = 'triceratops'
+
+        dist_dict['%d_dino_name' % id] = dino_name
+
+        conn.root.fence_segments[id] = FenceSegment(
+            id,
+            dino_name,
+        )
+
+    transaction.commit()
+    conn.close()
