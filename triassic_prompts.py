@@ -110,7 +110,7 @@ class BasePrompt(CommandLevel):
 class GridPrompt(CommandLevel):
     command_desc_dict = {
         "set" : "manually toggle power to a security node or exhibit",
-        "alloc" : "allocate additional power (0.000-1.000) to a node, but over-powering a node will cause power failure",
+        "resync" : "fast restart of a node's Super Cortex Engine\u2122",
     }
     default_prompt_text = 'main security grid #> '
 
@@ -130,7 +130,7 @@ class GridPrompt(CommandLevel):
         return parser
     
     def _do_set(self, args):
-        conn = data_model.get_db_conn()
+
         if args.scope == 'exhibit':
             self.println('node\texhibit\t\tstatus')
             self.println('====\t=======\t\t======')
@@ -143,36 +143,36 @@ class GridPrompt(CommandLevel):
 
                 self.println('%x\t%s\t%s' % (id, node.dinosaur, node.fence_status()))
         elif args.scope == 'node':
+            conn = data_model.get_db_conn()
+
             if args.id not in conn.root.fence_segments:
                 self.println('error')
                 # TODO: "dump core"
                 raise EOFError()
+
             # DATABASE_SECTION
             node = conn.root.fence_segments[args.id]
             node.enabled = (args.state=='up') # True for up, False for down
+            transaction.commit()
+            conn.close()
+
             self.println('node\tstatus')
             self.println('====\t======')
             self.println('%x\t%s' % (node.id, node.fence_status()))
-        transaction.commit()
-        conn.close()
+
             
 
-    def _alloc_parser(self, parser):
-        # alloc node <id> <val>
+    def _resync_parser(self, parser):
+        # resync node <id>
         subparsers = parser.add_subparsers(required=True, dest='scope')
         node_parser = subparsers.add_parser('node', add_help=False, print_fn=self.println)
         def nodeid(i):
             return int(i, 16)
-        def powerlevel(i):
-            i = float(i)
-            if i <= 0 or i > 1:
-                raise ValueError('level out of range')
-            return i
+
         node_parser.add_argument('id', type=nodeid)
-        node_parser.add_argument('power', type=powerlevel)
         return parser
 
-    def _do_alloc(self, args):
+    def _do_resync(self, args):
         # The only option, currently, is `alloc node <id> <val>`
         #  so we know that's been validated.
         # DATABASE_SECTION
@@ -187,21 +187,15 @@ class GridPrompt(CommandLevel):
         node = conn.root.fence_segments[args.id]
         # Check range, because if they've overpowered the node,
         #  then its fuse is going to blow, or something.
-        new_power = node.state + args.power
-        if new_power > 1.0:
-            # KABOOM
-            node.state = 0
-            node.enabled = False
-            self.println("WARNING\n")
-            self.println("DANGER\n")
-            self.println("WARNING\n")
-            self.println("OVER POWER.\n\nFUSE BLOWN\n")
-        else:
-            node.state = new_power
+        #node.state = 1.0
+        node.resync()
+
+        transaction.commit()
+        conn.close()
+
+        conn = data_model.get_db_conn()
         
         self.println('node\tstatus\tcondition')
         self.println('====\t======\t=========')
         self.println('%x\t%s\t%0.3f' % (node.id,
                             node.fence_status(), node.state))
-        transaction.commit()
-        conn.close()

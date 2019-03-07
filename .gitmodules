@@ -1,0 +1,3 @@
+[submodule "triassic_consensus"]
+	path = triassic_consensus
+	url = git@github.com:SouthwestCCDC/triassic_consensus.git
