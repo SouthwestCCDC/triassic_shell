@@ -11,6 +11,7 @@ db = None
 db_path = None
 dist_dict = None
 config = None
+current_dist_dict_sensor_index = None
 
 with open('./triassic_shell.conf', 'r') as fp:
     config = json.load(fp)
@@ -169,13 +170,24 @@ def get_db_conn():
 
 def dist_dict_reconnect():
     global dist_dict
+    global current_dist_dict_sensor_index
+
     while True:
+        count = 0
         for sensor in config['sensors']:
-            try:
-                dist_dict = DistributedDict(sensor['ip'], sensor['port'])
-                break
-            except:
-                pass
+            if count == (len(config['sensors']) - 1):
+                current_dist_dict_sensor_index = 0
+
+            if count > current_dist_dict_sensor_index:
+                try:
+                    current_dist_dict_sensor_index = count
+                    print('reconnecting to %s:%d' % (sensor['ip'], sensor['port']))
+                    dist_dict = DistributedDict(sensor['ip'], sensor['port'])
+                    break
+                except:
+                    pass
+
+            count += 1
 
         if dist_dict is not None:
             break
@@ -186,6 +198,7 @@ def init_db(filepath):
     global db_path
     global config
     global dist_dict
+    global current_dist_dict_sensor_index
 
     if filepath:
         db_path = filepath
@@ -194,12 +207,15 @@ def init_db(filepath):
 
     if config['dist_dict_enabled'] == 'True':
         while True:
+            count = 0
             for sensor in config['sensors']:
                 try:
+                    current_dist_dict_sensor_index = count
                     dist_dict = DistributedDict(sensor['ip'], sensor['port'])
                     break
                 except:
                     pass
+                count += 1
 
             if dist_dict is not None:
                 break
