@@ -53,7 +53,6 @@ class FenceSegment(persistent.Persistent):
                 break
             except:
                 dist_dict_reconnect()
-                time.sleep(1)
 
     def set_dist_value(self, key, value):
         while True:
@@ -62,7 +61,6 @@ class FenceSegment(persistent.Persistent):
                 break
             except:
                 dist_dict_reconnect()
-                time.sleep(1)
 
     @property
     def state(self):
@@ -182,7 +180,7 @@ def dist_dict_reconnect():
         if dist_dict is not None:
             break
         else:
-            time.sleep(1)
+            time.sleep(.25)
 
 def init_db(filepath):
     global db_path
@@ -206,7 +204,7 @@ def init_db(filepath):
             if dist_dict is not None:
                 break
             else:
-                time.sleep(1)
+                time.sleep(.25)
 
     try:
         if conn.root.fence_segments:
