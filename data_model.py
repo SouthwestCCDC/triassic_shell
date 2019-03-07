@@ -79,7 +79,6 @@ class FenceSegment(persistent.Persistent):
             if not self.time_in_range(start_time, end_time, node_last_update):
                 self.set_dist_value('%d_state' % self.id, 0)
 
-            conn.root.fence_segments[self.id].state = dist_dict['%d_state' % self.id]
             conn.root.fence_segments[self.id].state = self.get_dist_value('%d_state' % self.id)
 
             transaction.commit()
