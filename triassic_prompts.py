@@ -187,22 +187,15 @@ class GridPrompt(CommandLevel):
         node = conn.root.fence_segments[args.id]
         # Check range, because if they've overpowered the node,
         #  then its fuse is going to blow, or something.
+        #node.state = 1.0
+        node.resync()
 
-        new_power = node.state + args.power
-        if new_power > 1.0:
-            # KABOOM
-            node.state = 0
-            node.enabled = False
-            self.println("WARNING\n")
-            self.println("DANGER\n")
-            self.println("WARNING\n")
-            self.println("OVER POWER.\n\nFUSE BLOWN\n")
-        else:
-            node.state = new_power
+        transaction.commit()
+        conn.close()
+
+        conn = data_model.get_db_conn()
         
         self.println('node\tstatus\tcondition')
         self.println('====\t======\t=========')
         self.println('%x\t%s\t%0.3f' % (node.id,
                             node.fence_status(), node.state))
-        transaction.commit()
-        conn.close()
