@@ -108,3 +108,11 @@ venv.bak/
 .vscode/settings.json
 .vscode/launch.json
 triassic_shell.code-workspace
+
+*.fs
+
+*.index
+
+*.lock
+
+*.tmp
