@@ -7,6 +7,8 @@ import inspect
 import socket
 import sys
 
+import traceback
+
 from six import int2byte, text_type, binary_type
 
 from prompt_toolkit.application.current import get_app
@@ -143,6 +145,7 @@ class TelnetConnection(object):
                 # Connection closed by client.
                 logger.info('Connection closed by client. %r %r' % self.addr)
                 self.close()
+                raise Exception("Dirty connection close.")
 
         def run():
             with context() as ctx_id:

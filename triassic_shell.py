@@ -3,6 +3,7 @@ import logging
 import socket
 import argparse
 import json
+import os
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.eventloop import From, get_event_loop
@@ -27,6 +28,14 @@ def launch_telnet_session(connection):
     except socket.error as e:
         print('Socket error %s. Shutting down session.' % e.errno)
 
+def exception_handler(context):
+    # If we've gotten here, it's likely that something horrible has happened.
+    print("<<< Unhandled exception in an event loop.")
+    print("<!! This usually means that something horrible has happened.")
+    print("<!! Therefore, we will completely restart the server.")
+    print("<!! Goodbye.")
+    os.execl(sys.executable, sys.executable, *sys.argv)
+
 def run_telnet(host, port):
     # Import it here, because the import causes an error in Windows;
     #  and I want to be able to run the local version in Windows.
@@ -37,6 +46,7 @@ def run_telnet(host, port):
 
     server = TelnetServer(interact=launch_telnet_session, host=host, port=port)
     server.start()
+    get_event_loop().set_exception_handler(exception_handler)
     get_event_loop().run_forever()
 
 def main():
