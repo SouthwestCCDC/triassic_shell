@@ -130,8 +130,8 @@ class GridPrompt(CommandLevel):
         return parser
     
     def _do_set(self, args):
-
         if args.scope == 'exhibit':
+            conn = data_model.get_db_conn()
             self.println('node\texhibit\t\tstatus')
             self.println('====\t=======\t\t======')
             # DATABASE_SECTION
@@ -142,6 +142,8 @@ class GridPrompt(CommandLevel):
                 node.enabled = (args.state=='up') # True for up, False for down
 
                 self.println('%x\t%s\t%s' % (id, node.dinosaur, node.fence_status()))
+            transaction.commit()
+            conn.close()
         elif args.scope == 'node':
             conn = data_model.get_db_conn()
 
