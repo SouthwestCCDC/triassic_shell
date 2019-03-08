@@ -41,13 +41,17 @@ def run_telnet(host, port):
 
 def main():
     parser = argparse.ArgumentParser(prog='triassic_shell.py')
-    parser.add_argument('-f', '--file')
+    parser.add_argument('-f', '--file', help="Path to the ZODB persistence file to use.")
+    parser.add_argument('-c', '--config-file', type=data_model.consensus_config_from_file)
     telnet_parsers = parser.add_subparsers(dest='command')
     telnet_parser = telnet_parsers.add_parser('telnet')
     telnet_parser.add_argument('-a', '--address', default='127.0.0.1', dest='host')
     telnet_parser.add_argument('-p', '--port', type=int, default=21321)
 
     args = parser.parse_args()
+
+    if args.config_file:
+        data_model.consensus_config = args.config_file
 
     # Initialize the database, if needed.
     data_model.init_db(args.file if args.file else None)
