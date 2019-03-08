@@ -121,11 +121,14 @@ class FenceSegment(persistent.Persistent):
         self._p_changed = True
 
     def fence_status(self):
+        if self.state == 0.0:
+            return 'unreach'
+        
         if not self.enabled:
             return 'pwroff'
 
         if self.state < 0.25:
-            return 'failed'
+            return 'fail'
         elif self.state < 1.0:
             return 'degrad'
         else:
