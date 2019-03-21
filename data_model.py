@@ -16,7 +16,6 @@ class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
         self.id = id
         self.dinosaur = dinosaur_name
-        global consensus_dist_dict
         self._state = 1.0
         self._enabled = True
 
@@ -58,14 +57,12 @@ class FenceSegment(persistent.Persistent):
             return 'ok'
 
     def resync(self):
-        pass
-
-    def time_in_range(self, start, end, x):
-        """Return true if x is in the range [start, end]"""
-        if start <= x <= end:
-            return True
+        if self.state == 1.0:
+            pass # UH OH YOU BROKE IT
+        elif self.state:
+            self.state = 1
         else:
-            return False
+            pass # resync can't fix it when it's down
 
 def get_db_conn():
     global db
