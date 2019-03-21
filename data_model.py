@@ -10,7 +10,7 @@ import BTrees.OOBTree
 db = None
 db_path = None
 
-DELAY_SLEEP = 0.95
+DELAY_SLEEP = 0.05
 
 class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
@@ -21,7 +21,6 @@ class FenceSegment(persistent.Persistent):
 
     @property
     def state(self):
-        time.sleep(DELAY_SLEEP)
         return self._state
 
     @state.setter
@@ -45,11 +44,11 @@ class FenceSegment(persistent.Persistent):
     def fence_status(self):
         if self.state == 0.0:
             return 'unreach'
-        
+
         if not self.enabled:
             return 'pwroff'
 
-        if self.state < 0.25:
+        if self.state < 0.3:
             return 'fail'
         elif self.state < 1.0:
             return 'degrad'

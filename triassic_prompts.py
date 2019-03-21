@@ -29,7 +29,6 @@ class BasePrompt(CommandLevel):
 
     def _do_enable(self, args):
         if not self.enabled:
-            # TODO: new prompt!
             self.println('No password is configured...')
             yield From(BasePrompt(self.session, enabled=True).loop_until_exit())
 
