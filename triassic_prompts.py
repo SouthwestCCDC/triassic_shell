@@ -198,7 +198,6 @@ class GridPrompt(CommandLevel):
         transaction.commit()
         conn.close()
 
-        conn = data_model.get_db_conn()
         self.println('node\tstatus\tcondition')
         self.println('====\t======\t=========')
         self.println('%x\t%s\t%0.3f' % (node.id,
