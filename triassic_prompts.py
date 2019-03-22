@@ -1,3 +1,5 @@
+import time
+
 import ZODB, transaction
 
 from prompt_toolkit.eventloop import From
@@ -84,24 +86,28 @@ class BasePrompt(CommandLevel):
                     section.dinosaur,
                     section.fence_status()
                 ))
+                time.sleep(data_model.DELAY_SLEEP)
         elif args.command == 'exhibit':
             if args.name:
                 self.println('node\tstatus')
                 self.println('====\t======')
                 for section in fence_sections.values():
                     if section.dinosaur == args.name:
+                        time.sleep(data_model.DELAY_SLEEP)
                         self.println('%x\t%s' % (section.id, section.fence_status()))
             else:
                 self.println('exhibit')
                 self.println('=======')
                 for exh in all_exhibits:
-                    self.println(exh)
+                    time.sleep(data_model.DELAY_SLEEP)
+                self.println(exh)
         elif args.command == 'node':
             if args.id:
                 self.println('node\texhibit\t\tstatus\tcondition')
                 self.println('====\t=======\t\t======\t=========')
                 if args.id in fence_sections:
                     section = fence_sections[args.id]
+                    time.sleep(data_model.DELAY_SLEEP)
                     self.println('%x\t%s\t%s\t%0.3f' % (section.id, section.dinosaur,
                                         section.fence_status(), section.state))
 
@@ -138,6 +144,9 @@ class GridPrompt(CommandLevel):
                 if node.dinosaur != args.name:
                     continue
                 # The node matches the requested exhibit, so make it so:
+                if args.state == 'up' and node.enabled:
+                    self.println('Error: requested node to up is already up')
+                    break
                 node.enabled = (args.state=='up') # True for up, False for down
 
                 self.println('%x\t%s\t%s' % (id, node.dinosaur, node.fence_status()))
@@ -160,8 +169,6 @@ class GridPrompt(CommandLevel):
             self.println('node\tstatus')
             self.println('====\t======')
             self.println('%x\t%s' % (node.id, node.fence_status()))
-
-            
 
     def _resync_parser(self, parser):
         # resync node <id>
@@ -186,16 +193,12 @@ class GridPrompt(CommandLevel):
 
         # Now we know val, and id, are both ok.
         node = conn.root.fence_segments[args.id]
-        # Check range, because if they've overpowered the node,
-        #  then its fuse is going to blow, or something.
-        #node.state = 1.0
         node.resync()
 
         transaction.commit()
         conn.close()
 
         conn = data_model.get_db_conn()
-        
         self.println('node\tstatus\tcondition')
         self.println('====\t======\t=========')
         self.println('%x\t%s\t%0.3f' % (node.id,

@@ -10,7 +10,7 @@ import BTrees.OOBTree
 db = None
 db_path = None
 
-DELAY_SLEEP = 0.05
+DELAY_SLEEP = 0.15
 
 class FenceSegment(persistent.Persistent):
     def __init__(self, id, dinosaur_name):
@@ -19,35 +19,37 @@ class FenceSegment(persistent.Persistent):
         self._state = 1.0
         self._enabled = True
 
+    def get_state_slow(self):
+        return self.state
+
     @property
     def state(self):
         return self._state
 
     @state.setter
     def state(self, value):
-        time.sleep(DELAY_SLEEP)
-        self._state = value
+        if self._state - value < 0:
+            self._state = 0
+        else:
+            self._state = value
+        if not self._state:
+            self.enabled = False
         self._p_changed = True
 
     @property
     def enabled(self):
-        time.sleep(DELAY_SLEEP)
         return self._enabled
 
     @enabled.setter
     def enabled(self, value):
-        time.sleep(DELAY_SLEEP)
-
         self._enabled = value
         self._p_changed = True
 
     def fence_status(self):
         if self.state == 0.0:
             return 'unreach'
-
         if not self.enabled:
             return 'pwroff'
-
         if self.state < 0.3:
             return 'fail'
         elif self.state < 1.0:
@@ -57,11 +59,14 @@ class FenceSegment(persistent.Persistent):
 
     def resync(self):
         if self.state == 1.0:
-            pass # UH OH YOU BROKE IT
+            pass # TODO UH OH YOU BROKE IT
         elif self.state:
-            self.state = 1
+            self.state = 1.0
         else:
-            pass # resync can't fix it when it's down
+            # If we resync an unreachable node,
+            #  we will also have to power it back up.
+            self.state = 1.0
+            self.enabled = False
 
 def get_db_conn():
     global db

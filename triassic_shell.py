@@ -27,6 +27,8 @@ def launch_telnet_session(connection):
         pass
     except socket.error as e:
         print('Socket error %s. Shutting down session.' % e.errno)
+    except:
+        print('Other error. Shutting down session.')
 
 def exception_handler(context):
     # If we've gotten here, it's likely that something horrible has happened.
