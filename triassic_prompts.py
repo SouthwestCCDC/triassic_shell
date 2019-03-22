@@ -1,7 +1,5 @@
 import time
 
-import ZODB, transaction
-
 from prompt_toolkit.eventloop import From
 from prompt_command import CommandLevel
 import data_model
@@ -71,11 +69,10 @@ class BasePrompt(CommandLevel):
     def _do_show(self, args):
         all_exhibits = set()
         fence_sections = {}
-        conn = data_model.get_db_conn()
-        for id,node in conn.root.fence_segments.items():
+        data_model.load_from_disk()
+        for id,node in data_model.fence_segments.items():
             all_exhibits.add(node.dinosaur)
             fence_sections[id] = node
-        conn.close()
 
         if args.command == 'all':
             self.println('node\texhibit\t\tstatus')
@@ -136,11 +133,11 @@ class GridPrompt(CommandLevel):
     
     def _do_set(self, args):
         if args.scope == 'exhibit':
-            conn = data_model.get_db_conn()
+            data_model.load_from_disk()
             self.println('node\texhibit\t\tstatus')
             self.println('====\t=======\t\t======')
             # DATABASE_SECTION
-            for id,node in conn.root.fence_segments.items():
+            for id,node in data_model.fence_segments.items():
                 if node.dinosaur != args.name:
                     continue
                 # The node matches the requested exhibit, so make it so:
@@ -150,21 +147,19 @@ class GridPrompt(CommandLevel):
                 node.enabled = (args.state=='up') # True for up, False for down
 
                 self.println('%x\t%s\t%s' % (id, node.dinosaur, node.fence_status()))
-            transaction.commit()
-            conn.close()
+            data_model.save_to_disk()
         elif args.scope == 'node':
-            conn = data_model.get_db_conn()
+            data_model.load_from_disk()
 
-            if args.id not in conn.root.fence_segments:
+            if args.id not in data_model.fence_segments:
                 self.println('error')
                 # TODO: "dump core"
                 raise EOFError()
 
             # DATABASE_SECTION
-            node = conn.root.fence_segments[args.id]
+            node = data_model.fence_segments[args.id]
             node.enabled = (args.state=='up') # True for up, False for down
-            transaction.commit()
-            conn.close()
+            data_model.save_to_disk()
 
             self.println('node\tstatus')
             self.println('====\t======')
@@ -184,19 +179,17 @@ class GridPrompt(CommandLevel):
         # The only option, currently, is `alloc node <id> <val>`
         #  so we know that's been validated.
         # DATABASE_SECTION
-        conn = data_model.get_db_conn()
-        if args.id not in conn.root.fence_segments:
+        data_model.load_from_disk()
+        if args.id not in data_model.fence_segments:
             self.println('error')
             conn.close()
             # TODO: "dump core"
             raise EOFError()
 
         # Now we know val, and id, are both ok.
-        node = conn.root.fence_segments[args.id]
+        node = data_model.fence_segments[args.id]
         node.resync()
-
-        transaction.commit()
-        conn.close()
+        data_model.save_to_disk()
 
         self.println('node\tstatus\tcondition')
         self.println('====\t======\t=========')

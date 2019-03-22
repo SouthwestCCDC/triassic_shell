@@ -6,7 +6,6 @@ import json
 import os
 
 import data_model
-import ZODB, transaction
 
 from flask import Flask
 
@@ -18,11 +17,10 @@ def degrade_segment(index):
     if index >= 97 or index < 0:
         return 'bad'
     else:
-        conn = data_model.get_db_conn()
-        node = conn.root.fence_segments.values()[index]
+        data_model.load_from_disk()
+        node = data_model.fence_segments.values()[index]
         node.state -= 0.067
-        transaction.commit()
-        conn.close()
+        data_model.save_to_disk()
         return 'done'
 
 @app.route('/fence/<string:dinosaur>/<int:percent>/')
@@ -32,11 +30,10 @@ def exhibit_contained(dinosaur,percent):
 
     all_exhibits = set()
     fence_sections = {}
-    conn = data_model.get_db_conn()
-    for id,node in conn.root.fence_segments.items():
+    data_model.load_from_disk()
+    for id,node in data_model.fence_segments.items():
         all_exhibits.add(node.dinosaur)
         fence_sections[id] = node
-    conn.close()
 
     number_up = 0
     total_number = 0

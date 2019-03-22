@@ -2,17 +2,13 @@ import json
 import time
 import datetime
 import os
+import pickle
 
-import persistent
-import ZODB, ZODB.FileStorage, transaction
-import BTrees.OOBTree
-
-db = None
-db_path = None
+storage = None
 
 DELAY_SLEEP = 0.15
 
-class FenceSegment(persistent.Persistent):
+class FenceSegment():
     def __init__(self, id, dinosaur_name):
         self.id = id
         self.dinosaur = dinosaur_name
@@ -68,38 +64,37 @@ class FenceSegment(persistent.Persistent):
             self.state = 1.0
             self.enabled = False
 
-def get_db_conn():
-    global db
+def load_from_disk():
+    global fence_segments
+    global storage
+    if not storage:
+        return
+    with open(storage, 'rb') as f:
+        fence_segments = pickle.load(f)
 
-    if not db:
-        db = ZODB.DB(db_path)
-    conn = db.open()
-    return conn
+def save_to_disk():
+    global fence_segments
+    global storage
+    if not storage:
+        return
+    with open(storage, 'wb') as f:
+        pickle.dump(fence_segments, f)
 
 def init_db(filepath):
-    global db_path
+    global fence_segments
+    global storage
 
     if filepath:
-        db_path = filepath
+        storage = filepath
+        try:
+            with open(storage, 'rb') as f:
+                fence_segments = pickle.load(f)
+                return
+        except:
+            pass
 
-    conn = get_db_conn()
-
-    # Now, try loading our ZODB version of the data source. If
-    #  conn.root.fence_segments exists, then it's already been
-    #  initialized, and there's nothing to do. But, if conn.root
-    #  doesn't have a fence_segments attribute, then we need
-    #  to initialize that data.
-    try:
-        if conn.root.fence_segments:
-            conn.close()
-            return
-    except AttributeError:
-        pass
-
-
-    # conn.root has no attribute fence_segments, so we need to
-    #  create it, and load up all the dinosaurs.
-    conn.root.fence_segments = BTrees.OOBTree.BTree()
+    fence_segments = dict()
+    
     for id in range(0x10000+10111, 0xfffff, 10111): # 97 elements
         if id % 5 == 0:
             dino_name = 'velociraptor'
@@ -110,16 +105,9 @@ def init_db(filepath):
         else:
             dino_name = 'triceratops'
 
-        # TODO: What is the purpose of this?
-        while True:
-            try:
-                conn.root.fence_segments[id] = FenceSegment(
-                    id,
-                    dino_name,
-                )
-                break
-            except:
-                time.sleep(1)
-
-    transaction.commit()
-    conn.close()
+        fence_segments[id] = FenceSegment(
+            id,
+            dino_name,
+        )
+    
+    save_to_disk()

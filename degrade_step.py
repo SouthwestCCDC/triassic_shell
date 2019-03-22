@@ -10,12 +10,11 @@ import ZODB, transaction
 import data_model
 
 def degrade_step():
-    conn = data_model.get_db_conn()
-    for id,node in conn.root.fence_segments.items():
+    data_model.load_from_disk()
+    for id,node in data_model.fence_segments.items():
         if node.state < 1.0:
             node.state -= 0.067
-    transaction.commit()
-    conn.close()
+    data_model.save_to_disk()
 
 def main():
     parser = argparse.ArgumentParser(prog='triassic_scoring.py')
