@@ -1,5 +1,9 @@
 # triassic_shell
 
+## License
+
+MIT License.
+
 ## Introduction
 
 This module operates the park fences at Triassic Park for the Southwest 
