@@ -24,7 +24,7 @@ class FenceSegment():
 
     @state.setter
     def state(self, value):
-        if self._state - value < 0:
+        if value < 0:
             self._state = 0
         else:
             self._state = value
@@ -54,6 +54,7 @@ class FenceSegment():
             return 'ok'
 
     def resync(self):
+        self.state = 1.0
         if self.state == 1.0:
             pass # TODO UH OH YOU BROKE IT
         elif self.state:

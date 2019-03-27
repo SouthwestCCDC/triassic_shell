@@ -13,6 +13,7 @@ def degrade_step():
     data_model.load_from_disk()
     for id,node in data_model.fence_segments.items():
         if node.state < 1.0:
+            print('Degrading %x' % id)
             node.state -= 0.067
     data_model.save_to_disk()
 

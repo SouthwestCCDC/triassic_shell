@@ -18,7 +18,7 @@ def degrade_segment(index):
         return 'bad'
     else:
         data_model.load_from_disk()
-        node = data_model.fence_segments.values()[index]
+        node = list(data_model.fence_segments.values())[index]
         node.state -= 0.067
         data_model.save_to_disk()
         return 'done'
