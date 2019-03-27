@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+
+set force_conservative 0  ;# set to 1 to force conservative mode even if
+			  ;# script wasn't run conservatively originally
+if {$force_conservative} {
+	set send_slow {1 .1}
+	proc send {ignore arg} {
+		sleep .1
+		exp_send -s -- $arg
+	}
+}
+
+set timeout -1
+
+spawn telnet localhost 2323
+
+expect "> "
+
+send -- "show all\r"
+expect -re "=+\r"
+
+
+expect {
+    -re {([123456789abcdef]{5})\s+\S+\s+degrad} {
+            set degradid $expect_out(1,string)
+            puts "got degraded id $degradid!"
+            expect "> "
+            send -- "enable\r"
+            expect "#> "
+            send -- "access main security grid\r"
+            expect "main security grid #> "
+            send -- "resync node $degradid\r"
+            expect "main security grid #> "
+            send -- "exit\r"
+            expect "#> "
+            send -- "exit\r"
+        }
+    "> "
+}
+
+send -- "exit\r"
+expect eof
