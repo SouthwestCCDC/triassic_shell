@@ -27,7 +27,7 @@ This module operates the park fences at Triassic Park for the Southwest
 Regional Collegiate Cyber Defense Competition. It has two parts: the
 Park Control Console, which is the CLI and either accessibly locally,
 or by running the `telnet` subcommand to expose it over telnet; and a
-simple flash webservice used to score and/or degrade the fences.
+simple flask webservice used to score and/or degrade the fences.
 
 Persistence to disk is optional via the `-f` flag. It uses flat files
 with Python's pickle module, so thread-safety and concurrency is not
